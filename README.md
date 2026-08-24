@@ -12,6 +12,7 @@
 4. **字体与颜色高度可定制**：
    - 释义字号预设为 `12pt`（候选词为 `14pt`，稍小且层次分明）。
    - 支持在 `weasel.yaml` 或 `weasel.custom.yaml` 中自由定制字体、字号以及普通/高亮状态下的注释颜色。
+![rime-ice](https://github.mianao.info/https://raw.githubusercontent.com/harry10086/picx-images-hosting/master/Rime/rime-ice.webp)
 
 ## 📁 变更与生成文件清单
 
