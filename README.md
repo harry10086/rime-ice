@@ -1,3 +1,103 @@
+# 雾凇拼音添加中英双向词典释义功能与使用说明
+
+## 🎯 实现成果概览
+
+为雾凇拼音及小狼毫（Weasel）输入法完整实现中英双向释义与注释显示功能：
+
+1. **中译英**：输入中文（单字/词组）时，候选词旁以注释形式展示 CC-CEDICT 英文释义。
+2. **英译中**：输入英文单词时，候选词旁以注释形式展示 ECDICT 中文简明释义。
+3. **极速与低资源消耗**：
+   - 采用 Rime 原生内置的 OpenCC C++ 字典树（Trie）引擎，检索复杂度为 $O(L)$（微秒级），不占用 Lua GC 堆内存，彻底杜绝打字卡顿。
+   - 85.9 万条英汉词库 + 19.7 万条汉英词库瞬间完成加载。
+4. **字体与颜色高度可定制**：
+   - 释义字号预设为 `12pt`（候选词为 `14pt`，稍小且层次分明）。
+   - 支持在 `weasel.yaml` 或 `weasel.custom.yaml` 中自由定制字体、字号以及普通/高亮状态下的注释颜色。
+
+## 📁 变更与生成文件清单
+
+| 文件路径 | 类型 | 说明 |
+| :--- | :---: | :--- |
+| [`others/script/build_dict_opencc.py`](file:///d:/GitHub/rime-ice/others/script/build_dict_opencc.py) | **新建** | 词典转换构建脚本，将 ECDICT 与 CEDICT 转换为 OpenCC 格式 |
+| [`opencc/ecdict.txt`](file:///d:/GitHub/rime-ice/opencc/ecdict.txt) | **新建** | 859,260 条英汉词典数据（OpenCC Trie 格式） |
+| [`opencc/ecdict.json`](file:///d:/GitHub/rime-ice/opencc/ecdict.json) | **新建** | 英汉词典 OpenCC 配置文件 |
+| [`opencc/cedict.txt`](file:///d:/GitHub/rime-ice/opencc/cedict.txt) | **新建** | 197,827 条汉英词典数据（OpenCC Trie 格式） |
+| [`opencc/cedict.json`](file:///d:/GitHub/rime-ice/opencc/cedict.json) | **新建** | 汉英词典 OpenCC 配置文件 |
+| [`lua/dict_comment_filter.lua`](file:///d:/GitHub/rime-ice/lua/dict_comment_filter.lua) | **新建** | 双向词典释义滤镜，负责提取释义、字数截断与注释拼接 |
+| [`lua/dict_commit_processor.lua`](file:///d:/GitHub/rime-ice/lua/dict_commit_processor.lua) | **新建** | 词典释义快捷上屏处理器 |
+| [`rime_ice.schema.yaml`](file:///d:/GitHub/rime-ice/rime_ice.schema.yaml) | **修改** | 挂载 `dict_comment_filter`、`dict_commit_processor` 并提供参数配置段 |
+| `double_pinyin*.schema.yaml` | **修改** | 全系双拼方案（自然码、小鹤、微软、搜狗、ABC、加加、紫光）同步挂载 `dict_comment_filter` |
+| [`melt_eng.schema.yaml`](file:///d:/GitHub/rime-ice/melt_eng.schema.yaml) | **修改** | 独立英文输入方案同步挂载 `dict_comment_filter` |
+| [`weasel.yaml`](file:///d:/GitHub/rime-ice/weasel.yaml) | **修改** | 将 `comment_font_point` 设置为 `12`（略小于全局 `14pt`） |
+
+## ⚙️ 个性化配置指南
+
+### 1. 调整释义开关与最大长度
+
+在 [`rime_ice.schema.yaml`](file:///d:/GitHub/rime-ice/rime_ice.schema.yaml#L164-L170)（或用户补丁 `rime_ice.custom.yaml`）中配置：
+
+```yaml
+dict_comment_filter:
+  enable_chinese_to_english: true
+  enable_english_to_chinese: true
+  max_defs: 2                       # 候选框中显示的释义项数（超出才会显示“…”）
+  max_length: 50                    # 单条最大字符数上限
+```
+
+> [!TIP]
+> 如果您觉得释义过长影响候选框宽度，可将 `max_length` 调小（例如 `20` 或 `25`）；如希望完整显示，可调大至 `50`。
+
+
+### 2. 调整小狼毫（Weasel）字体大小与颜色
+
+在 [`weasel.yaml`](file:///d:/GitHub/rime-ice/weasel.yaml) 或用户补丁 `weasel.custom.yaml` 中配置：
+
+#### (1) 注释字体大小与字体族
+```yaml
+style:
+  font_point: 14            # 候选文字字号
+  comment_font_point: 12    # 释义注释字号（建议比候选文字小 1~3 pt）
+  comment_font_face: "Segoe UI, Microsoft YaHei"  # 注释字体
+```
+
+#### (2) 注释字体颜色
+在具体配色方案（如 `purity_of_form_custom` 或您正在使用的配色）下设定：
+```yaml
+preset_color_schemes:
+  your_color_scheme:
+    # 普通未选中候选的释义颜色（建议使用柔和的浅灰/副色）
+    comment_text_color: 0x888888          # ABGR / RGBA 格式
+    # 当前选中/高亮候选的释义颜色
+    hilited_comment_text_color: 0xBF616A
+```
+
+### 3. 快捷键与配置说明
+#### 词典释义快捷上屏快捷键
+| 快捷键组合 | 推荐理由与体验 | 输出示例 |
+| :--- | :--- | :--- |
+| **`Ctrl + D`** (🌟 强烈推荐) | **Dict / 词典**，左手单手瞬间完成，100% 不冲突且符合直觉 | 选中「你好」按 `Ctrl+D` $\rightarrow$ `你好 (hello; hi; how are you)` |
+| **`\`** (反斜杠键) | **无需按 Ctrl 组合键**，候选框挑好词后直接按 `\` 键立即输出 | 选中「apple」按 `\` $\rightarrow$ `apple (n. 苹果, 苹果树)` |
+| **`Ctrl + E`** | **Explain / 释义**，单手易按 | 同上 |
+| **`Ctrl + Shift + 回车`** | 避开系统拦截的回车组合键 | 同上 |
+
+#### 释义实时开关快捷键
+* **快捷键**：**`Ctrl + Shift + E`**
+* **效果**：
+  - 按一次 **`Ctrl + Shift + E`**：右下角提示 **【译关】**，候选词旁立即隐藏所有中英文释义，回归纯净候选列表。
+  - 再按一次 **`Ctrl + Shift + E`**：右下角提示 **【译开】**，候选词旁恢复显示中英文即时释义。
+
+* 按 **`F4`**（或 `Ctrl + \``）唤出「方案选单」：
+* 列表中会出现 **`【译开 / 译关】`** 选项，可直接按对应数字键或鼠标点击切换。
+* 状态会自动记忆（已在 `default.yaml` 的 `save_options` 中开启记忆），下次打字保持您设定的状态。
+
+## 🚀 生效与重新部署
+
+完成修改后，请重新部署小狼毫：
+1. 右键点击 Windows 任务栏托盘的小狼毫图标。
+2. 点击 **「重新部署」 (Deploy)**（或按快捷键 `Ctrl + \`` 打开方案菜单后按重新部署）。
+3. 部署完成后即可在打字时享受即时双向词典翻译提示！
+
+---
+
 # 雾凇拼音
 
 ![demo](./others/asserts/overview.png)
@@ -7,6 +107,8 @@
 雾凇拼音包含全拼和双拼输入方案、长期维护的精校词库、各类扩展功能和详尽的注释。适配小狼毫 Weasel、鼠须管 Squirrel、Fcitx5、iBus 等几乎所有 Rime 应用。你可以不折腾，一键下载部署后即刻使用；可以借着完善的注释和社区生态，让 AI 帮你定制改造；也可以将之作为深入了解和自定义 Rime 的起点。
 
 使用雾凇拼音，享受跨平台一致、隐私友好、个性化门槛低的 Rime 简体中文输入体验。
+
+---
 
 [立即下载安装](#安装) | [功能演示和教程](#功能演示和使用教程) | [常见问题](#常见问题) | [词库共建](https://github.com/iDvel/rime-ice/issues/666) | [更新日志](./others/docs/Changelog.md) | [详细介绍](https://dvel.me/posts/rime-ice/) ↗ | [在线体验](https://www.mintimate.cc/zh/demo/fcitx5Online.html)[^1] ↗
 

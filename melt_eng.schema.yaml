@@ -19,9 +19,13 @@ switches:
   - name: ascii_mode
     reset: 0
     states: [ASCII-OFF, ASCII-ON]
+  - name: dict_comment
+    states: [ 译关, 译开 ]
+    reset: 1
 
 engine:
   processors:
+    - lua_processor@*dict_commit_processor  # 词典释义快捷上屏 (Ctrl+D / Ctrl+E / \ / Ctrl+Shift+Enter)
     - ascii_composer
     - key_binder
     - speller
@@ -40,6 +44,7 @@ engine:
     - table_translator
     - punct_translator
   filters:
+    - lua_filter@*dict_comment_filter
     - uniquifier
 
 speller:
@@ -64,6 +69,8 @@ translator:
 
 key_binder:
   import_preset: default
+  bindings:
+    - { when: always, accept: "Control+Shift+E", toggle: dict_comment }
 
 punctuator:
   import_preset: default

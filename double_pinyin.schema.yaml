@@ -47,12 +47,16 @@ switches:
   - name: search_single_char  # search.lua 的功能开关，辅码查词时是否单字优先
     states: [正常, 单字]
     abbrev: [词, 单]
+  - name: dict_comment        # 词典释义开关
+    states: [ 译关, 译开 ]
+    reset: 1
 
 
 # 输入引擎
 engine:
   processors:
     - lua_processor@*select_character  # 以词定字
+    - lua_processor@*dict_commit_processor  # 词典释义快捷上屏 (Ctrl+D / Ctrl+E / \ / Ctrl+Shift+Enter)
     - ascii_composer
     - recognizer
     - key_binder
@@ -91,6 +95,7 @@ engine:
     - simplifier@emoji                              # Emoji
     - simplifier@traditionalize                     # 简繁切换
     - lua_filter@*search@radical_pinyin             # 部件拆字辅码
+    - lua_filter@*dict_comment_filter               # 中英双向词典释义
     - uniquifier                                    # 去重
 
 
@@ -313,7 +318,8 @@ recognizer:
 key_binder:
   import_preset: default  # 从 default.yaml 继承通用的
   search: "`"             # 辅码引导符，要添加到 speller/alphabet
-  # bindings:             # 也可以再增加方案专有的
+  bindings:
+    - { when: always, accept: "Control+Shift+E", toggle: dict_comment }  # 快捷键开关词典释义
 
 
 # editor 用来定制操作键的行为，以下是默认行为 https://github.com/rime/librime/blob/master/src/rime/gear/editor.cc
