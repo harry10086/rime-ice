@@ -45,6 +45,7 @@ end
 
 local function lookup(opencc_obj, key)
     if not opencc_obj or not key or key == "" then return nil end
+    -- 仅使用 convert_word 进行精确全词匹配（严禁使用 convert_text，以防分词匹配局部子词导致释义错误）
     local ok, res = pcall(function() return opencc_obj:convert_word(key) end)
     if ok and res then
         if type(res) == "table" and #res > 0 then
@@ -55,10 +56,6 @@ local function lookup(opencc_obj, key)
         elseif type(res) == "string" and res ~= key and res ~= "" then
             return res
         end
-    end
-    local ok2, txt = pcall(function() return opencc_obj:convert_text(key) end)
-    if ok2 and type(txt) == "string" and txt ~= key and txt ~= "" then
-        return txt
     end
     return nil
 end
