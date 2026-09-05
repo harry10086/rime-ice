@@ -230,8 +230,8 @@ key_binder:
     - { when: has_menu, accept: equal, send: Page_Down }
 
     # 翻页 , .
-    # - { when: has_menu, accept: comma, send: Page_Up }
-    # - { when: has_menu, accept: period, send: Page_Down }
+    - { when: has_menu, accept: comma, send: Page_Up }
+    - { when: has_menu, accept: period, send: Page_Down }
 
     # 翻页 [ ]  ⚠️ 开启时请修改上面以词定字的快捷键
     # - { when: has_menu, accept: bracketleft, send: Page_Up }

@@ -46,6 +46,7 @@ engine:
   processors:
     - lua_processor@*select_character  # 以词定字
     - lua_processor@*dict_commit_processor  # 词典释义快捷上屏 (Ctrl+D / Ctrl+E / \ / Ctrl+Shift+Enter)
+    - lua_processor@*markdown_processor     # Markdown 成对符号光标自动居中
     - ascii_composer
     - recognizer
     - key_binder
@@ -57,6 +58,8 @@ engine:
   segmentors:
     - ascii_segmentor
     - matcher
+    - affix_segmentor@markdown_mD
+    - affix_segmentor@markdown_Md
     - abc_segmentor
     - affix_segmentor@radical_lookup  # 部件拆字自定义 tag
     - punct_segmentor
@@ -74,6 +77,7 @@ engine:
     - lua_translator@*unicode            # Unicode
     - lua_translator@*number_translator  # 数字、金额大写
     - lua_translator@*calc_translator    # 计算器
+    - lua_translator@*markdown_translator@markdown # Markdown 语法输入
     - lua_translator@*force_gc           # 暴力 GC
   filters:
     - lua_filter@*corrector                         # 错音错字提示
@@ -261,6 +265,20 @@ punctuator:
     __include: symbols_v:/symbols              # 从 symbols_v.yaml 导入配置
 
 
+# Markdown 语法输入设定
+markdown:
+  prefix: "^(Md|mD)"           # 触发前缀 (仅 Md 或 mD)
+  enable_auto_cursor: true     # 成对符号上屏后是否自动居中光标
+
+markdown_mD:
+  tag: markdown
+  prefix: "mD"
+
+markdown_Md:
+  tag: markdown
+  prefix: "Md"
+
+
 # 部件拆字反查
 radical_lookup:
   tag: radical_lookup
@@ -291,6 +309,7 @@ recognizer:
     number: "^R[0-9]+[.]?[0-9]*"        # 脚本将自动获取第 2 个字符 R 作为触发前缀，响应 lua_translator@*number_translator，数字金额大写
     calculator: "^cC.+"                 # 响应 lua_translator@*calc_translator，计算器。前缀设定项 calculator/prefix
     gregorian_to_lunar: "^N[0-9]{1,8}"  # 响应 lua_translator@*lunar，公历转农历
+    markdown: "^(Md|mD)[^0-9,.]*$"      # 响应 lua_translator@*markdown_translator@markdown
 
 
 # 从 default 继承快捷键
@@ -299,6 +318,10 @@ key_binder:
   search: "`"             # 辅码引导符，要添加到 speller/alphabet
   bindings:
     - { when: always, accept: "Control+Shift+E", toggle: dict_comment }  # 快捷键开关词典释义
+    - { when: has_menu, accept: comma, send: Page_Up }                   # 逗号上一页
+    - { when: has_menu, accept: period, send: Page_Down }                 # 句号下一页
+    - { when: has_menu, accept: minus, send: Page_Up }                    # 减号上一页
+    - { when: has_menu, accept: equal, send: Page_Down }                  # 等号下一页
 
 
 # editor 用来定制操作键的行为，以下是默认行为 https://github.com/rime/librime/blob/master/src/rime/gear/editor.cc
@@ -461,3 +484,13 @@ speller:
     - derive/(.+)ong$/$1on/ # lon → long
     - derive/([tl])eng$/$1en/ # ten → teng
     - derive/([qwrtypsdfghjklzxcbnm])([aeio])ng$/$1ng/ # lng → lang、leng、ling、long
+
+
+# abc_segmentor extra_tags
+abc_segmentor:
+  extra_tags:
+    - pinyin
+
+# search tags
+search:
+  tags: [ pinyin ]

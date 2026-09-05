@@ -1,4 +1,4 @@
-# 雾凇拼音添加中英双向词典释义功能与使用说明
+# 雾凇拼音添加中英双向词典释义和 Markdown 语法输入功能与使用说明
 
 ## 🎯 实现成果概览
 
@@ -8,25 +8,37 @@
 2. **英译中**：输入英文单词时，候选词旁以注释形式展示 ECDICT 中文简明释义。
 3. **极速与低资源消耗**：
    - 采用 Rime 原生内置的 OpenCC C++ 字典树（Trie）引擎，检索复杂度为 $O(L)$（微秒级），不占用 Lua GC 堆内存，彻底杜绝打字卡顿。
-   - 85.9 万条英汉词库 + 19.7 万条汉英词库瞬间完成加载。
+   - 精选 9.2 万核心大纲高频词：涵盖牛津核心、柯林斯星级、中高考、四六级、考研、托福、雅思、GRE 考纲词汇以及计算机常用词汇。
+   - 精选最常用的11.4 万条简体中文释义。
 4. **字体与颜色高度可定制**：
    - 释义字号预设为 `12pt`（候选词为 `14pt`，稍小且层次分明）。
    - 支持在 `weasel.yaml` 或 `weasel.custom.yaml` 中自由定制字体、字号以及普通/高亮状态下的注释颜色。
 ![rime-ice](https://github.mianao.info/https://raw.githubusercontent.com/harry10086/picx-images-hosting/master/Rime/rime-ice.webp)
+
+5. **Markdown 语法速记词库与输入翻译器**：
+   - 预设 `55` 个 Markdown 语法词条，涵盖标题、列表、引用、链接、表格等。
+   - 触发方式：输入 `Md` 或 `mD` + 符号/关键词。
+   - 特色：支持一键生成各类表格、待办事项、不同级别的标题。
 
 ## 📁 变更与生成文件清单
 
 | 文件路径 | 类型 | 说明 |
 | :--- | :---: | :--- |
 | [`others/script/build_dict_opencc.py`](file:///d:/GitHub/rime-ice/others/script/build_dict_opencc.py) | **新建** | 词典转换构建脚本，将 ECDICT 与 CEDICT 转换为 OpenCC 格式 |
-| [`opencc/ecdict.txt`](file:///d:/GitHub/rime-ice/opencc/ecdict.txt) | **新建** | 859,260 条英汉词典数据（OpenCC Trie 格式） |
+| [`opencc/ecdict.txt`](file:///d:/GitHub/rime-ice/opencc/ecdict.txt) | **新建** | 9.2 万条英汉词典数据（OpenCC Trie 格式） |
+| [`opencc/ecdict.ocd2`](file:///d:/GitHub/rime-ice/opencc/ecdict.ocd2) | **新建** | 英汉二进制双数组 Trie 词库 |
 | [`opencc/ecdict.json`](file:///d:/GitHub/rime-ice/opencc/ecdict.json) | **新建** | 英汉词典 OpenCC 配置文件 |
-| [`opencc/cedict.txt`](file:///d:/GitHub/rime-ice/opencc/cedict.txt) | **新建** | 197,827 条汉英词典数据（OpenCC Trie 格式） |
+| [`opencc/cedict.txt`](file:///d:/GitHub/rime-ice/opencc/cedict.txt) | **新建** | 11.4 万条汉英词典数据（OpenCC Trie 格式） |
+| [`opencc/cedict.ocd2`](file:///d:/GitHub/rime-ice/opencc/cedict.ocd2) | **新建** | 汉英二进制双数组 Trie 词库 |
 | [`opencc/cedict.json`](file:///d:/GitHub/rime-ice/opencc/cedict.json) | **新建** | 汉英词典 OpenCC 配置文件 |
 | [`lua/dict_comment_filter.lua`](file:///d:/GitHub/rime-ice/lua/dict_comment_filter.lua) | **新建** | 双向词典释义滤镜，负责提取释义、字数截断与注释拼接 |
 | [`lua/dict_commit_processor.lua`](file:///d:/GitHub/rime-ice/lua/dict_commit_processor.lua) | **新建** | 词典释义快捷上屏处理器 |
-| [`rime_ice.schema.yaml`](file:///d:/GitHub/rime-ice/rime_ice.schema.yaml) | **修改** | 挂载 `dict_comment_filter`、`dict_commit_processor` 并提供参数配置段 |
-| `double_pinyin*.schema.yaml` | **修改** | 全系双拼方案（自然码、小鹤、微软、搜狗、ABC、加加、紫光）同步挂载 `dict_comment_filter` |
+| [`lua/markdown_translator.lua`](file:///d:/GitHub/rime-ice/lua/markdown_translator.lua) | **新建** | Markdown 语法翻译器，负责匹配 `Md` / `mD` 前缀与关键词生成语法候选 |
+| [`lua/markdown_processor.lua`](file:///d:/GitHub/rime-ice/lua/markdown_processor.lua) | **新建** | Markdown 符号光标联动处理器，上屏成对符号/代码块后自动把光标定位到居中位置 |
+| [`others/script/rime_cursor.rs`](file:///d:/GitHub/rime-ice/others/script/rime_cursor.rs) | **新建** | 原生 Windows 光标定位轻量级动态链接库 C/Rust 源码 |
+| [`others/script/rime_cursor.dll`](file:///d:/GitHub/rime-ice/others/script/rime_cursor.dll) | **新建** | 编译后的原生光标控制 DLL 模块，无弹窗、零延迟微调输入光标 |
+| [`rime_ice.schema.yaml`](file:///d:/GitHub/rime-ice/rime_ice.schema.yaml) | **修改** | 挂载双向词典释义、词典快捷上屏与 Markdown 语法输入/光标定位插件 |
+| `double_pinyin*.schema.yaml` | **修改** | 全系双拼方案（自然码、小鹤、微软、搜狗、ABC、加加、紫光）同步挂载词典释义与 Markdown 语法输入 |
 | [`melt_eng.schema.yaml`](file:///d:/GitHub/rime-ice/melt_eng.schema.yaml) | **修改** | 独立英文输入方案同步挂载 `dict_comment_filter` |
 | [`weasel.yaml`](file:///d:/GitHub/rime-ice/weasel.yaml) | **修改** | 将 `comment_font_point` 设置为 `12`（略小于全局 `14pt`） |
 
@@ -90,12 +102,73 @@ preset_color_schemes:
 * 列表中会出现 **`【译开 / 译关】`** 选项，可直接按对应数字键或鼠标点击切换。
 * 状态会自动记忆（已在 `default.yaml` 的 `save_options` 中开启记忆），下次打字保持您设定的状态。
 
+#### 触发前缀
+输入 `Md` 或 `mD`时，前缀自动隐藏，进入专属的 Markdown 语法输入模式。
+
+**全套 Markdown 语法词库标点/符号直出映射：**
+
+| 输入字符 | 候选列表 (依次显示) | 注释说明 | 输出文本 |
+| :--- | :--- | :--- | :--- |
+| **`#`** | 1. `# ` <br>2. `## ` <br>3. `### ` <br>4. `#### ` <br>5. `##### ` <br>6. `###### ` | 一级标题 H1<br>二级标题 H2<br>三级标题 H3<br>四级标题 H4<br>五级标题 H5<br>六级标题 H6 | `# `<br>`## `<br>`### `<br>`#### `<br>`##### `<br>`###### ` |
+| **`*`** | 1. `**` <br>2. `****` <br>3. `******` <br>4. `- ` <br>5. `***` | 斜体 Italic (`*文本*`)<br>粗体 Bold (`**文本**`)<br>粗斜体 (`***文本***`)<br>无序列表项<br>分割线 Horizontal Rule | `**`<br>`****`<br>`******`<br>`- `<br>`***` |
+| **`-`** | 1. `- ` <br>2. `- [ ] ` <br>3. `- [x] ` <br>4. `---` <br>5. `~~~~` | 无序列表<br>待办任务 (未完成)<br>待办任务 (已完成)<br>水平分割线<br>删除线 Strikethrough | `- `<br>`- [ ] `<br>`- [x] `<br>`---`<br>`~~~~` |
+| **`>`** | 1. `> ` <br>2. `> [!NOTE] ` <br>3. `> [!TIP] ` <br>4. `> [!IMPORTANT] ` <br>5. `> [!WARNING] ` <br>6. `> [!CAUTION] ` <br>7. `>> ` | 块级引用 Blockquote<br>Callout 提示框 (Note)<br>Callout 技巧框 (Tip)<br>Callout 重要框 (Important)<br>Callout 警告框 (Warning)<br>Callout 危险框 (Caution)<br>嵌套引用 | `> `<br>`> [!NOTE] `<br>`> [!TIP] `<br>`> [!IMPORTANT] `<br>`> [!WARNING] `<br>`> [!CAUTION] `<br>`>> ` |
+| **`` ` ``** | 1. `` ` `` <br>2. ```` ```\n\n``` ```` <br>3. ```` ```python\n\n``` ```` <br>4. ```` ```bash\n\n``` ```` <br>5. ```` ```json\n\n``` ```` <br>6. ```` ```mermaid\n\n``` ```` | 行内代码 Inline Code<br>代码块 Code Block<br>Python 代码块<br>Bash 脚本块<br>JSON 数据块<br>Mermaid 流程图 | `` ` ``<br>```` ```\n\n``` ````<br>```` ```python\n\n``` ````<br>```` ```bash\n\n``` ````<br>```` ```json\n\n``` ````<br>```` ```mermaid\n\n``` ```` |
+| **`[`** | 1. `[]()` <br>2. `![]()` <br>3. `[[]]` <br>4. `![[]]` <br>5. `[^1]` | 超链接 Link<br>插入图片 Image<br>双链 (Obsidian Wikilink)<br>嵌入文件 (Embed)<br>脚注引用 Footnote | `[]()`<br>`![]()`<br>`[[]]`<br>`![[]]`<br>`[^1]` |
+| **\|** | 1. 标准 2x2 表格 <br>2. 标准 3x3 表格 <br>3. \|:---\| (左对齐) <br>4. \|:---:\| (居中) <br>5. \|---:\| (右对齐) | Markdown 表格模板 | \| 表头1 \| 表头2 \|<br>\| --- \| --- \|<br>\| 内容1 \| 内容2 \| |
+| **`$`** | 1. `$$` <br>2. `$$\n\n$$` | 行内 LaTeX 数学公式<br>块级 LaTeX 数学公式 | `$$`<br>`$$\n\n$$` |
+| **`=`** | 1. `====` <br>2. `===` | 文本高亮 (`==高亮==`)<br>一级标题下划线 | `====`<br>`===` |
+| **`~`** | 1. `~~~~` <br>2. `~` | 删除线 (`~~文本~~`)<br>下标 Subscript | `~~~~`<br>`~` |
+| **`^`** | 1. `^^` <br>2. `[^1]: ` | 上标 Superscript<br>脚注定义 | `^^`<br>`[^1]: ` |
+
+
+#### 拼音/英文助记关键词输入
+当输入 `Md` + 关键词时，同样能快速调用对应模板：
+* `Mdh` / `Mdbt` / `Mdbiaoti` $\rightarrow$ 各级标题模板（`# ` ~ `###### `）
+* `Mdb` / `Mdcu` / `Mdbold` $\rightarrow$ 粗体（`****`）
+* `Mdi` / `Mdxt` / `Mditalic` $\rightarrow$ 斜体（`**`）
+* `Mds` / `Mdsc` / `Mddel` $\rightarrow$ 删除线（`~~~~`）
+* `Mdhl` / `Mdgl` / `Mdmark` $\rightarrow$ 高亮（`====`）
+* `Mdcode` / `Mddm` / `Mddaima` $\rightarrow$ 代码块模板
+* `Mdlink` / `Mdlj` / `Mdlianjie` $\rightarrow$ 超链接（`[]()`）
+* `Mdimg` / `Mdtp` / `Mdtupian` $\rightarrow$ 插入图片（`![]()`）
+* `Mdtable` / `Mdbg` / `Mdbiaoge` $\rightarrow$ 表格生成
+* `Mdtask` / `Mddb` / `Mdtodo` $\rightarrow$ 待办任务清单（`- [ ] ` / `- [x] `）
+* `Mdquote` / `Mdyy` / `Mdyinyong` $\rightarrow$ 引用与 Callout 标注
+* `Mdmath` / `Mdgs` / `Mdlatex` $\rightarrow$ LaTeX 数学公式
+* `Mdhr` / `Mdfgx` $\rightarrow$ 水平分割线（`---`）
+* `Mdwiki` / `Mdsl` $\rightarrow$ 双链（`[[]]` / `![[]]`）
+* `Mddetails` / `Mdzd` $\rightarrow$ 折叠详情块（`<details><summary>标题</summary>内容</details>`）
+* `Mdtoc` / `Mdml` $\rightarrow$ 自动生成目录标记（`[TOC]`）
+
+#### 添加候选符号方法
+`lua/markdown_translator.lua` 的 `MD_DATA` 数组中，定义了输入 `mD` + 符号时出现的候选：
+```lua
+--- Markdown 语法词库定义
+local MD_DATA = {
+    -- 1. 井号 (#): 各级标题 (1~6 级)
+    ["#"] = {
+        { text = "# ", comment = "H1 一级标题", left = 0 },
+        { text = "## ", comment = "H2 二级标题", left = 0 },
+        { text = "### ", comment = "H3 三级标题", left = 0 },
+        { text = "#### ", comment = "H4 四级标题", left = 0 },
+        { text = "##### ", comment = "H5 五级标题", left = 0 },
+        { text = "###### ", comment = "H6 六级标题", left = 0 },
+    },
+......
+
+```
+
+
 ## 🚀 生效与重新部署
 
 完成修改后，请重新部署小狼毫：
 1. 右键点击 Windows 任务栏托盘的小狼毫图标。
 2. 点击 **「重新部署」 (Deploy)**（或按快捷键 `Ctrl + \`` 打开方案菜单后按重新部署）。
 3. 部署完成后即可在打字时享受即时双向词典翻译提示！
+
+**雾凇拼音使用参考：**
+[Rime输入法小狼毫简明使用手册：https://mianao.info/3990756e](https://mianao.info/3990756e)
 
 ---
 

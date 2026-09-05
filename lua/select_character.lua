@@ -25,6 +25,9 @@ function select.func(key, env)
         and (env.first_key or env.last_key)
     then
         local input = context.input
+        if input:match("^[Mm][Dd]") then
+            return 2
+        end
         local selected_candidate = context:get_selected_candidate()
         selected_candidate = selected_candidate and selected_candidate.text or input
 
