@@ -51,11 +51,14 @@ end
 local function format_by_count(def_str, max_defs, max_length, is_en_to_zh)
     if not def_str or def_str == "" then return "" end
 
-    -- 将全角分号、逗号、顿号安全替换为单字节 ASCII 分号，彻底杜绝 Lua 字符集字节碰撞撕裂汉字编码（如“里”字乱码）
-    local safe_str = def_str:gsub("；", ";"):gsub("，", ";"):gsub("、", ";"):gsub(",", ";")
+    -- 统一先将 UTF-8 不换行空格 (\194\160) 替换为标准 ASCII 空格，杜绝 Lua 单字节字符类 [%s\194\160] 错切汉字末尾字节 (如“靠”、“帮”、“亮”、“象”等末字节 0xA0)
+    local clean_def = def_str:gsub("\194\160", " ")
+
+    -- 将全角分号、逗号、顿号安全替换为单字节 ASCII 分号
+    local safe_str = clean_def:gsub("；", ";"):gsub("，", ";"):gsub("、", ";"):gsub(",", ";")
     local items = {}
     for item in safe_str:gmatch("([^;]+)") do
-        local trimmed = item:gsub("^[%s\194\160]+", ""):gsub("[%s\194\160]+$", "")
+        local trimmed = item:match("^%s*(.-)%s*$") or ""
         if trimmed ~= "" then
             table.insert(items, trimmed)
         end
