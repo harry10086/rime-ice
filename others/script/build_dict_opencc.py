@@ -21,6 +21,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 OPENCC_DIR = os.path.join(ROOT_DIR, "opencc")
 
+QINGJIAN_ZH_TSV = os.path.join(ROOT_DIR, "others", "qingjian_glossary_zh.tsv")
+QINGJIAN_EN_TSV = os.path.join(ROOT_DIR, "others", "qingjian_glossary_en.tsv")
 ECDICT_CSV = os.path.join(ROOT_DIR, "ecdict.csv")
 CEDICT_TXT = os.path.join(ROOT_DIR, "cedict_1_0_ts_utf-8_mdbg.txt")
 
@@ -106,53 +108,98 @@ def clean_ecdict_translation(trans: str) -> str:
     return res.replace(" ", "\u00a0")
 
 
-def build_ecdict(opencc_tool: str):
-    if not os.path.exists(ECDICT_CSV):
-        print(f"File not found: {ECDICT_CSV}")
-        return
+def format_senses(senses: list[str]) -> str:
+    """格式化多条释义并转换空格为无换行空格以适配 OpenCC 词典格式"""
+    valid = [s.strip() for s in senses if s.strip()]
+    if not valid:
+        return ""
+    combined = "; ".join(valid[:3])
+    combined = re.sub(r"\s+", " ", combined).strip()
+    return combined.replace(" ", "\u00a0")
 
+
+def build_ecdict(opencc_tool: str):
     print("Building ECDICT (High-Frequency & Practical Words)...")
     ice_en_words = load_rime_ice_en_words()
     entries = {}
 
-    with open(ECDICT_CSV, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            word = row.get("word", "").strip()
-            if not is_valid_single_word(word):
-                continue
+    # 1. 优先加载清简精校英中词库（LLM 精准高频释义 + 词性）
+    qj_count = 0
+    if os.path.exists(QINGJIAN_ZH_TSV):
+        print(f"Loading primary lexicon from {QINGJIAN_ZH_TSV}...")
+        with open(QINGJIAN_ZH_TSV, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("#") or not line.strip():
+                    continue
+                parts = line.rstrip("\r\n").split("\t")
+                if len(parts) >= 2:
+                    word = parts[0].strip()
+                    if not word:
+                        continue
+                    trans = format_senses(parts[1:])
+                    if not trans:
+                        continue
+                    entries[word] = trans
+                    word_lower = word.lower()
+                    if word_lower not in entries:
+                        entries[word_lower] = trans
+                    word_cap = word.capitalize()
+                    if word_cap not in entries:
+                        entries[word_cap] = trans
+                    qj_count += 1
+        print(f"Loaded {qj_count} high-quality entries from Qingjian glossary-zh.")
 
-            trans = row.get("translation", "").strip()
-            if not trans:
-                continue
+    # 2. 从传统 ECDICT 补充清简未覆盖但雾凇输入法包含的词条（兜底）
+    fallback_count = 0
+    if os.path.exists(ECDICT_CSV):
+        print(f"Loading fallbacks from {ECDICT_CSV}...")
+        with open(ECDICT_CSV, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                word = row.get("word", "").strip()
+                if not is_valid_single_word(word):
+                    continue
 
-            tag = row.get("tag", "").strip()
-            frq = row.get("frq", "").strip()
-            collins = row.get("collins", "").strip()
-            oxford = row.get("oxford", "").strip()
-            bnc = row.get("bnc", "").strip()
-            word_lower = word.lower()
+                word_lower = word.lower()
+                # 若清简已收录，跳过，保留清简的高质量释义
+                if word in entries or word_lower in entries:
+                    continue
 
-            is_practical = bool(
-                tag
-                or collins
-                or oxford
-                or (frq and frq != "0")
-                or (bnc and bnc != "0")
-                or len(word) <= 4
-                or word_lower in ice_en_words
-            )
+                trans = row.get("translation", "").strip()
+                if not trans:
+                    continue
 
-            if not is_practical:
-                continue
+                tag = row.get("tag", "").strip()
+                frq = row.get("frq", "").strip()
+                collins = row.get("collins", "").strip()
+                oxford = row.get("oxford", "").strip()
+                bnc = row.get("bnc", "").strip()
 
-            cleaned = clean_ecdict_translation(trans)
-            if not cleaned:
-                continue
+                is_practical = bool(
+                    tag
+                    or collins
+                    or oxford
+                    or (frq and frq != "0")
+                    or (bnc and bnc != "0")
+                    or len(word) <= 4
+                    or word_lower in ice_en_words
+                )
 
-            entries[word] = cleaned
-            if word_lower not in entries:
-                entries[word_lower] = cleaned
+                if not is_practical:
+                    continue
+
+                cleaned = clean_ecdict_translation(trans)
+                if not cleaned:
+                    continue
+
+                entries[word] = cleaned
+                if word_lower not in entries:
+                    entries[word_lower] = cleaned
+                word_cap = word.capitalize()
+                if word_cap not in entries:
+                    entries[word_cap] = cleaned
+                fallback_count += 1
+        print(f"Supplemented {fallback_count} entries from ECDICT CSV.")
 
     output_txt = os.path.join(OPENCC_DIR, "ecdict.txt")
     with open(output_txt, "w", encoding="utf-8", newline="\n") as f:
@@ -246,25 +293,49 @@ def clean_cedict_definitions(defs_str: str) -> str:
 
 
 def build_cedict(opencc_tool: str):
-    if not os.path.exists(CEDICT_TXT):
-        print(f"File not found: {CEDICT_TXT}")
-        return
-
-    print("Building CEDICT (Simplified Chinese Only)...")
+    print("Building CEDICT (Chinese to English Dictionary)...")
     entries = {}
-    with open(CEDICT_TXT, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            m = re.match(r"^(\S+)\s+(\S+)\s+\[(.*?)\]\s+/(.+)/$", line)
-            if m:
-                trad, simp, pinyin, defs = m.groups()
-                cleaned = clean_cedict_definitions(defs)
-                if not cleaned:
+
+    # 1. 优先加载清简精校中英词库（覆盖 23.2 万常用及领域词，消除歧义古义）
+    qj_count = 0
+    if os.path.exists(QINGJIAN_EN_TSV):
+        print(f"Loading primary lexicon from {QINGJIAN_EN_TSV}...")
+        with open(QINGJIAN_EN_TSV, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("#") or not line.strip():
                     continue
-                if simp not in entries:
+                parts = line.rstrip("\r\n").split("\t")
+                if len(parts) >= 2:
+                    word = parts[0].strip()
+                    if not word:
+                        continue
+                    trans = format_senses(parts[1:])
+                    if not trans:
+                        continue
+                    entries[word] = trans
+                    qj_count += 1
+        print(f"Loaded {qj_count} high-quality entries from Qingjian glossary-en.")
+
+    # 2. 从传统 CEDICT 补充清简未包含的词条（兜底）
+    fallback_count = 0
+    if os.path.exists(CEDICT_TXT):
+        print(f"Loading fallbacks from {CEDICT_TXT}...")
+        with open(CEDICT_TXT, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                m = re.match(r"^(\S+)\s+(\S+)\s+\[(.*?)\]\s+/(.+)/$", line)
+                if m:
+                    trad, simp, pinyin, defs = m.groups()
+                    if simp in entries:
+                        continue
+                    cleaned = clean_cedict_definitions(defs)
+                    if not cleaned:
+                        continue
                     entries[simp] = cleaned
+                    fallback_count += 1
+        print(f"Supplemented {fallback_count} entries from CEDICT.")
 
     output_txt = os.path.join(OPENCC_DIR, "cedict.txt")
     with open(output_txt, "w", encoding="utf-8", newline="\n") as f:
