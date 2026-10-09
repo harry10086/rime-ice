@@ -50,6 +50,10 @@ others/qingjian_glossary_en.tsv，232,213 词）。
 | [`weasel.yaml`](file:///d:/GitHub/rime-ice/weasel.yaml) | **修改** | 将 `comment_font_point` 设置为 `12`（略小于全局 `14pt`） |
 
 ## ⚙️ 个性化配置指南
+> [!TIP]
+> 无须手动修改YAML文件，直接使用小狼毫配置工具：[https://github.com/harry10086/WeaselTune](https://github.com/harry10086/WeaselTune)
+
+![](https://github.mianao.info/https://raw.githubusercontent.com/harry10086/picx-images-hosting/master/Rime/dashboard.webp)
 
 ### 1. 调整释义开关与最大长度
 
