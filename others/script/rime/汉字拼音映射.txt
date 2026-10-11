@@ -11,7 +11,9 @@
 躄 bi
 鵖 bi
 猼 bo
+狛 bo
 礤 ca
+䜺 chai
 閦 chu
 膪 chuai
 鯙 chun
@@ -39,6 +41,7 @@
 沕 hu
 㺀 hu
 𬴐 huan
+懽 huan
 獚 huang
 𫚔 hui
 䇲 jia
@@ -58,6 +61,7 @@
 鞟 kuo
 筈 kuo
 鯻 la
+㻋 la
 鿶 lang
 𧒽 lei
 睖 leng
@@ -86,6 +90,7 @@
 叡 rui
 睒 shan
 昰 shi
+笹 shi
 糸 si
 楤 song
 𧊕 song
@@ -114,6 +119,7 @@
 鮨 yi
 煐 ying
 楢 you
+萮 yu
 魣 yu
 蚖 yuan
 䗃 zhan
@@ -161,6 +167,7 @@
 朊 ruan
 挼 ruo
 辻 shi
+糬 shu
 薙 ti
 畑 tian
 鿬 tian
@@ -170,6 +177,7 @@
 矽 xi
 雫 xia
 咲 xiao
+厓 ya
 蓺 yi
 哟 yo
 唷 yo
@@ -324,7 +332,6 @@
 缏得红罗手帕子
 冫部
 菠薐菜
-狛千代
 峬峭
 重裀列鼎
 列鼎重裀
@@ -382,7 +389,6 @@
 张琍敏
 张书旂
 崔杋圭
-豆䜺儿
 多宝槅
 蛾眉螓首
 螓首蛾眉
@@ -710,7 +716,6 @@
 朱载坖
 明穆宗朱载坖
 妺喜
-和世㻋
 白帢青衫
 劈地价来
 十夫桡椎
@@ -729,7 +734,7 @@
 一之日觱发
 栗烈觱发
 万古钦躅
-禽滑釐
+禽滑厘
 𦗒狐
 不亦说乎
 日掛中天
